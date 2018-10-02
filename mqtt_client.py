@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 #!/usr/bin/python
 
-=======
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
 from __future__ import division
 import paho.mqtt.client as mqtt
 import json
@@ -16,7 +13,6 @@ from decimal import Decimal
 import sys
 import logging
 import logging.config
-<<<<<<< HEAD
 import urllib2
 from threading import Lock
 import schedule
@@ -39,18 +35,11 @@ warnings.filterwarnings('error', category=MySQLdb.Warning)
 
 # Loading configuration file
 config_file_name = 'server_example.conf'
-=======
-
-
-# Loading configuration file
-config_file_name = 'server.conf'
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
 data_queue = Queue.Queue()
 config = ConfigParser.ConfigParser()
 config.read(config_file_name)
 
 # Setting up logger
-<<<<<<< HEAD
 file_name, extension = os.path.splitext(os.path.basename(sys.argv[0]))
 logger = logging.getLogger(file_name)
 handler = logging.handlers.RotatingFileHandler(('/var/log/mqttClientsLog/' + file_name + '.log'), maxBytes=10485670, backupCount=5)
@@ -62,20 +51,11 @@ logger.setLevel(logging.DEBUG)
 # Database name and table for making queries
 db_name = config.get('Database', 'database')
 db_table = config.get('Database', 'table')
-=======
-logger = logging.getLogger('MqttClientLogger')
-handler = logging.handlers.RotatingFileHandler('/var/log/mqttClientLogs.log', maxBytes=10485670, backupCount=5)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
 
 # Number of threads for handling MQTT messages
 worker_threads = 1
 
 # Topic for publish and subscription
-<<<<<<< HEAD
 subs_topic = config.get("MqttBroker", "topic")
 
 # AppEUI for filtering messages from P2PSmartTest sensors only
@@ -141,17 +121,10 @@ def get_weather_updates():
         logger.critical("Database connection closed.")
         logger.critical("System interrupted, exiting system!")
         sys.exit(1)
-=======
-subs_topic = "cwc/elsys/downlinkMessage"
-
-# AppEUI for filtering messages from Elsys sensors only
-app_eui = "43-57-43-5f-44-45-4d-4f"
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
 
 
 # This is asynchronous thread for inserting data to MySQL database
 class insert_thread(threading.Thread):
-<<<<<<< HEAD
 
     def __init__(self, queue, db_conn_str):
         threading.Thread.__init__(self)
@@ -246,38 +219,6 @@ class insert_thread(threading.Thread):
 
 
     # This messages parser is specifically for P2PSmartTest sensors only.
-=======
-    insert_query = ("INSERT INTO virpac.elsys_data (timestamp_created, ACK, ADR, AppEUI, CHAN, CLS, CODR, DeviceID, FREQ, LSNR, MHDR, MODU, OPTS, `PORT`, RFCH, RSSI, SEQN, Size, timestamp_node, Payload, MsgID, Temperature, Humidity, CO2, Light, PIR, Battery) VALUES (%(timestamp_created)s, %(ACK)s, %(ADR)s, %(AppEUI)s, %(CHAN)s, %(CLS)s, %(CODR)s, %(DeviceID)s, %(FREQ)s, %(LSNR)s, %(MHDR)s, %(MODU)s, %(OPTS)s, %(PORT)s, %(RFCH)s, %(RSSI)s, %(SEQN)s, %(Size)s, %(timestamp_node)s, %(Payload)s, %(MsgID)s, %(Temperature)s, %(Humidity)s, %(CO2)s, %(Light)s, %(PIR)s, %(Battery)s)")
-
-
-    def __init__(self, queue, db_con):
-        threading.Thread.__init__(self)
-        self.queue = queue
-        self.db = db_con
-        self.cursor = self.db.cursor()
-
-
-    def run(self):
-        while True:
-            #print (self.queue.get())
-            db_mesg = self.parse_message(self.queue.get())
-            if db_mesg:
-                #print(db_mesg)
-                if db_mesg['AppEUI'] == app_eui
-                    #print(self.insert_query % db_mesg)
-                    try:
-                        self.cursor.execute(self.insert_query, db_mesg)
-                        self.db.commit()
-                    except (MySQLdb.Error, MySQLdb.Warning) as e:
-                        logger.error("Error occured while executing MySQL query.")
-                        logger.error("Trace: "  + e )
-                        logger.info("Not panicking, carrying on anyway!!")
-                        return None
-                self.queue.task_done()
-
-
-    # This messages parser is specifically for Elsys sensors only.
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
     # For other sensors, you can write your own parser.
     def parse_message(self, raw_mesg):
         db_mesg_json = {}
@@ -315,7 +256,6 @@ class insert_thread(threading.Thread):
             payload = raw_mesg_json["payload"]
             db_mesg_json["Payload"] = str(payload)
             db_mesg_json["MsgID"] = raw_mesg_json["_msgid"]
-<<<<<<< HEAD
 
             # V1
             db_mesg_json["V1"] = ((payload[35]*256*256*256) + (payload[34]*256*256) + (payload[33]*256) + payload[32])/10
@@ -385,45 +325,21 @@ class insert_thread(threading.Thread):
             db_mesg_json["TimestampWeather"] = timestampWeather
             lock.release()
             
-=======
-            db_mesg_json["Temperature"] = ((payload[1]*256) + payload[2])/10
-            db_mesg_json["Humidity"] = payload[4]
-            db_mesg_json["Light"] = (payload[6]*256) + payload[7]
-            if mesg_size == 16:
-                db_mesg_json["PIR"] = 0
-                db_mesg_json["CO2"] = 0
-                db_mesg_json["Battery"] = ((payload[9]*256) + payload[10])/1000
-            if mesg_size == 20:
-                db_mesg_json["PIR"] = payload[9]
-                db_mesg_json["CO2"] = 0
-                db_mesg_json["Battery"] = ((payload[11]*256) + payload[12])/1000
-            if mesg_size == 24:
-                db_mesg_json["PIR"] = payload[9]
-                db_mesg_json["CO2"] = (payload[11]*256) + payload[12]
-                db_mesg_json["Battery"] = ((payload[14]*256) + payload[15])/1000
-            db_mesg_json["timestamp_created"] = int(round(time.time() * 1000))
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
             return db_mesg_json
 
         except ValueError as e:
             logger.warning("Incomming message is not a valid JSON.")
             logger.warning("Error: " + e.message)
             logger.warning(raw_mesg)
-<<<<<<< HEAD
             sys.stdout.write(e.message + '\n')
             sys.stdout.flush()
-=======
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
             return False
 
         except Exception as e:
             logger.warning("Something went wrong. Ignoring message.")
-<<<<<<< HEAD
             logger.error("Error: " + e.message)
             sys.stdout.write(e.message + '\n')
             sys.stdout.flush()
-=======
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
             return False
 
 
@@ -435,38 +351,23 @@ def on_connect(client, userdata, flags, rc):
         # Topic for CWC CloudMQTT broker
         client.subscribe(subs_topic)
 
-<<<<<<< HEAD
-=======
-        # Topic for CWC Panoulu broker
-        #client.subscrinbe("test")
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
     else:
         logger.critical("Error occured while connecting to the broker. Error code: " + str(rc))
 
 
 def on_message(client, userdata, mesg):
     data_queue.put(mesg.payload)
-<<<<<<< HEAD
     #print("Got message from broker")
-=======
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
 
 
 def on_disconnect(client, userdata, rc):
     logging.CRITICAL("Client disconnected. Trying to reconnect.")
-<<<<<<< HEAD
 
 def disconnect_mqtt_client():
     global mqtt_client
     mqtt_client.disconnect()
     mqtt_client.loop_stop()
     logger.critical('MQTT client has been disconnected.')
-=======
-    client.connected_flag = False
-    time.sleep(5)
-    connect_client(client)
-
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
 
 def init_client_object():
 
@@ -477,7 +378,6 @@ def init_client_object():
 
     # Credentials for CloudMQTT broker
     client.username_pw_set(broker_user, password=broker_pass)
-<<<<<<< HEAD
     client.connected_flag = False
     client.on_connect = on_connect
     client.on_message = on_message
@@ -508,40 +408,12 @@ if __name__ == '__main__':
     get_weather_updates()
     schedule.every().hour.do(get_weather_updates)
 
-=======
-
-    client.connected_flag = False
-
-    client.on_connect = on_connect
-
-    client.on_message = on_message
-
-    client.on_disconnect = on_disconnect
-
-    return client
-
-
-def connect_client(mqtt_client):
-
-    # Server and port for CloudMQTT broker
-    mqtt_client.connect("m21.cloudmqtt.com", port=14551, keepalive=60)
-
-    # Server and port for Panoulu broker (localhost only)
-    #client.connect("127.0.0.1", port=1883, keepalive=60)
-
-    mqtt_client.loop_forever()
-
-
-if __name__ == '__main__':
-   
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
     # Initializing database
     db_host = config.get('Database', 'host')
     db_port = config.get('Database', 'port')
     db_user = config.get('Database', 'user')
     db_pass = config.get('Database', 'passwd')
     db_name = config.get('Database', 'database')
-<<<<<<< HEAD
     db_table = config.get('Database', 'table')    
 
     global db_conn_string
@@ -566,26 +438,4 @@ if __name__ == '__main__':
         logger.critical("Database connection closed.")
         logger.critical("System interrupted, exiting system!")
         logging.shutdown()
-=======
-    db_table = config.get('Database', 'table')
-    
-    try:
-        db = MySQLdb.Connect(host = db_host, port = int(db_port), user = db_user, passwd = db_pass, db = db_name)
-        logger.info("Connected to database.")
-
-        for i in range(worker_threads):
-            t = insert_thread(data_queue, db)
-            t.setDaemon(True)
-            t.start()
-            logger.info("%s has started", t.getName())
-
-        # Initializing MQTT client and connecting it to localhost broker
-        mqtt_client = init_client_object()
-        connect_client(mqtt_client)
-
-    except KeyboardInterrupt:
-        db.close()
-        logger.critical("Database connection closed.")
-        logger.critical("System interrupted, exiting system!")
->>>>>>> 23230fb7a2f3e341578104d8d585aa58df57b63b
         sys.exit(1)
